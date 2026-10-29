@@ -32,14 +32,15 @@ body{background:#F6F4EE;margin:0;touch-action:manipulation}
 #stage{position:fixed;left:50%;top:50%;width:1180px;height:820px;transform-origin:center center;box-shadow:0 0 0 100vmax #F6F4EE}
 #offlineBadge{position:fixed;right:10px;bottom:8px;z-index:50;padding:5px 12px;border-radius:999px;background:rgba(22,33,62,.85);color:#FFE45C;font:700 12px/1.2 sans-serif;transition:opacity .6s;pointer-events:none}
 #gameOverlay{display:none;position:fixed;inset:0;z-index:100;background:#000}
-#gameFrame{width:100%;height:100%;border:0;background:#fff}
-#gameClose{position:fixed;top:10px;right:10px;z-index:101;width:52px;height:52px;border-radius:50%;border:0;background:#FFE45C;color:#16213E;font-size:28px;font-weight:900;box-shadow:0 4px 12px rgba(0,0,0,.35);cursor:pointer}
+#gameBox{position:fixed;left:50%;top:50%;transform-origin:center center}
+#gameFrame{width:100%;height:100%;border:0;background:#fff;display:block}
+#gameClose{position:absolute;top:12px;right:12px;z-index:101;width:52px;height:52px;border-radius:50%;border:0;background:#FFE45C;color:#16213E;font-size:28px;font-weight:900;box-shadow:0 4px 12px rgba(0,0,0,.35);cursor:pointer}
 </style>
 </head>
 <body>
 <div id="stage"><div id="app"></div></div>
 <div id="offlineBadge">오프라인 저장 준비 중</div>
-<div id="gameOverlay"><iframe id="gameFrame" title="게임" allow="autoplay; fullscreen"></iframe><button id="gameClose" type="button" aria-label="게임 닫기">×</button></div>
+<div id="gameOverlay"><div id="gameBox"><iframe id="gameFrame" title="게임" allow="autoplay; fullscreen"></iframe><button id="gameClose" type="button" aria-label="게임 닫기">×</button></div></div>
 <template id="tpl">
 <div style="position: relative; width: 1180px; height: 820px; overflow: hidden; background: #F6F4EE; color: #16213E; font-family: 'Noto Sans KR', system-ui, sans-serif; word-break: keep-all; line-height: 1.45">
 
@@ -394,8 +395,22 @@ body{background:#F6F4EE;margin:0;touch-action:manipulation}
     var href = a.getAttribute('href') || '';
     if (/^https?:/i.test(href)) return;
     e.preventDefault();
-    fr.src = href; ov.style.display = 'block';
+    fr.src = href; ov.style.display = 'block'; layoutGame();
   });
+  // 게임 화면: 세로 휴대폰은 90도 돌려 가로로, 작은 화면은 가상 1280px 폭으로 그린 뒤 축소
+  var box = document.getElementById('gameBox');
+  function layoutGame() {
+    var vv = window.visualViewport;
+    var W = vv ? vv.width : window.innerWidth, H = vv ? vv.height : window.innerHeight;
+    var portrait = H > W * 1.05 && Math.min(W, H) < 900;
+    var Lw = portrait ? H : W, Lh = portrait ? W : H;
+    var vw = Lw, vh = Lh, sc = 1;
+    if (Lh < 700) { vw = 1280; vh = Math.round(1280 * Lh / Lw); sc = Lw / 1280; }
+    box.style.width = vw + 'px'; box.style.height = vh + 'px';
+    box.style.transform = 'translate(-50%, -50%)' + (portrait ? ' rotate(90deg)' : '') + ' scale(' + sc + ')';
+  }
+  window.addEventListener('resize', layoutGame);
+  window.addEventListener('orientationchange', function () { setTimeout(layoutGame, 200); });
   document.getElementById('gameClose').addEventListener('click', function () { ov.style.display = 'none'; fr.src = 'about:blank'; });
 
   // offline cache
